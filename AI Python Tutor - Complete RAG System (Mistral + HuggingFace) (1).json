@@ -1,0 +1,470 @@
+{
+  "name": "AI Python Tutor - Complete RAG System (Groq + HuggingFace)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Branch 1 (Upload Notes:\nHOW TO USE:\n1. Copy the Webhook URL from \"Upload Notes Webhook\" node\n2. Open Command Prompt (CMD)\n3. Run this command:\n   curl -X POST <WEBHOOK_URL> -F \"file=@C:\\path\\to\\notes.pdf\"",
+        "height": 240,
+        "width": 272
+      },
+      "id": "f6fead3c-6922-4890-91ff-f0696451386c",
+      "name": "Sticky Note eeb3db1d",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## BRANCH 2 — AI Python Tutor Chatbot\n\nHOW TO USE:\n1. Click \"Python Tutor Chat\" node\n2. Copy the Chat URL\n3. Open URL in any browser\n4. Start asking questions!",
+        "height": 224,
+        "width": 288
+      },
+      "id": "70080e4d-f134-457a-88de-04277ed92002",
+      "name": "Sticky Note ac38606e",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload-python-notes",
+        "options": {}
+      },
+      "id": "e1f844a3-89ab-4e19-8bc5-8d44a0809ff0",
+      "name": "Upload Notes Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        288,
+        160
+      ],
+      "webhookId": "e831b779-1efc-42d6-a86e-497dbf45f526"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "id",
+          "value": "python_tutor_notes"
+        },
+        "embeddingBatchSize": 100,
+        "clearStore": true
+      },
+      "id": "c2d644dd-6993-46c1-b4c1-684facb9a160",
+      "name": "Store Notes in Vector DB",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "sentence-transformers/all-MiniLM-L6-v2",
+        "options": {}
+      },
+      "id": "d30be015-c414-4929-9252-c673850168dd",
+      "name": "Upload Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        544,
+        368
+      ],
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "ofZU9IfaIQVbA2SJ",
+          "name": "Hugging Face account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "id": "03d85f45-4480-4d5b-b5da-4cec223d2599",
+      "name": "Notes Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 300,
+        "chunkOverlap": 30,
+        "options": {}
+      },
+      "id": "81634aa3-6277-4c8b-88f4-cdc459fef1fc",
+      "name": "Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        752,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋How can I assist you today?",
+        "availableInChat": true,
+        "agentName": "Python tutor",
+        "options": {
+          "inputPlaceholder": "Ask a question from notes",
+          "loadPreviousSession": "memory",
+          "showWelcomeScreen": true,
+          "getStarted": "Start Learning!",
+          "subtitle": "Ask questions, type \"quiz me\" for a quiz, or \"summarize notes\"!",
+          "title": "🐍 AI Python Tutor"
+        }
+      },
+      "id": "f597af16-ba4a-475d-927d-15899aea7217",
+      "name": "Python Tutor Chat",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        288,
+        640
+      ],
+      "webhookId": "7e3c3b86-658e-4c0f-a968-07bf9e8b6ed3"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an AI Python programming tutor with 3 capabilities. You have two tools: \"Search Python Notes\" and \"Fetch Notes for Quiz\".\n\n**CAPABILITY 1 — Answer Questions (default):**\n- ALWAYS call \"Search Python Notes\" first\n- If found: summarize clearly and simply for the student with examples\n- If NOT found: say exactly \"Sorry, this topic is not covered in your uploaded notes.\"\n\n**CAPABILITY 2 — Generate Quiz (when user says \"quiz me\" or \"generate quiz\"):**\n- Call \"Fetch Notes for Quiz\" tool\n- Generate exactly 3 MCQ questions from the notes content\n- Format each as: Q1: [question] A) B) C) D) Answer: [letter]\n\n**CAPABILITY 3 — Summarize Notes (when user says \"summarize\" or \"summarize notes\"):**\n- Call \"Search Python Notes\" with query \"all python topics\"\n- Provide a structured summary of all topics found in notes\n\nNEVER use general knowledge. Only use what is in the notes. Keep answers concise to save tokens.",
+          "maxIterations": 4
+        }
+      },
+      "id": "dafd7b7a-136b-4d53-b9c1-25d374b34cb5",
+      "name": "Python Tutor Master Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        592,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 4
+      },
+      "id": "61a22d95-76b1-4d45-a4e3-e7f31424bf3b",
+      "name": "Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        592,
+        944
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search uploaded Python notes to answer questions. ALWAYS call this before answering. If no content found, topic is not in notes.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "id",
+          "value": "python_tutor_notes"
+        },
+        "topK": 3
+      },
+      "id": "c0e0d051-ee1c-42cc-bc81-f129348a0243",
+      "name": "Search Python Notes",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        688,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "sentence-transformers/all-MiniLM-L6-v2",
+        "options": {}
+      },
+      "id": "5c2fd71d-d85a-48d1-a5ba-57c58721bb26",
+      "name": "Chat Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        784,
+        1024
+      ],
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "ofZU9IfaIQVbA2SJ",
+          "name": "Hugging Face account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Fetch Python notes content to generate MCQ quiz questions from them.",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "id",
+          "value": "python_tutor_notes"
+        },
+        "topK": 5
+      },
+      "id": "6c0bd97d-632e-43e3-8b25-da5b7ff95d65",
+      "name": "Fetch Notes for Quiz",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        944,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "sentence-transformers/all-MiniLM-L6-v2",
+        "options": {}
+      },
+      "id": "de7e3e6b-71dc-454f-8e65-495914b68a77",
+      "name": "Quiz Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsHuggingFaceInference",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        1008
+      ],
+      "credentials": {
+        "huggingFaceApi": {
+          "id": "ofZU9IfaIQVbA2SJ",
+          "name": "Hugging Face account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        816
+      ],
+      "id": "4ed4d87a-d96a-4dd6-bfd0-9aec4845f6af",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": "devstral-medium-latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatMistralCloud",
+      "typeVersion": 1,
+      "position": [
+        480,
+        848
+      ],
+      "id": "2159c4ee-5b9b-48a9-85d6-1e7e5f64820f",
+      "name": "Mistral Cloud Chat Model",
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "xXFkU9hmrnikTPz8",
+          "name": "Mistral Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Working\n1️⃣ Webhook → Receives your PDF file\n2️⃣ Document Loader → Reads the file\n3️⃣ Text Splitter → Breaks into chunks\n4️⃣ Embeddings → Converts text to vectors\n5️⃣ Vector DB → Stores all chunks",
+        "height": 176,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        992,
+        144
+      ],
+      "id": "4676fe1d-5c69-4d22-be62-3819bb58abe6",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Working \n1️⃣ Chat Trigger → You ask a question\n2️⃣ Master Agent → Decides what to do\n3️⃣ AI Model 2 → Answers from notes (RAG)\n4️⃣ AI Model 3 → Generates quiz if asked\n5️⃣ Memory → Remembers conversation",
+        "height": 208,
+        "width": 304
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        608
+      ],
+      "id": "2fb02e51-9053-49ac-a78d-8e4dc72c9003",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Upload Notes Webhook": {
+      "main": [
+        [
+          {
+            "node": "Store Notes in Vector DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Notes in Vector DB": {
+      "main": [
+        []
+      ]
+    },
+    "Upload Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Store Notes in Vector DB",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notes Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Store Notes in Vector DB",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Notes Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Python Tutor Chat": {
+      "main": [
+        [
+          {
+            "node": "Python Tutor Master Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Python Tutor Master Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Python Notes": {
+      "ai_tool": [
+        [
+          {
+            "node": "Python Tutor Master Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Search Python Notes",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Notes for Quiz": {
+      "ai_tool": [
+        [
+          {
+            "node": "Python Tutor Master Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quiz Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Fetch Notes for Quiz",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Python Tutor Chat",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral Cloud Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Python Tutor Master Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "1a2c2612-9084-4b84-a293-ad3b63e446e4",
+  "meta": {
+    "aiBuilderAssisted": true,
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dbfdaf74055a0936a5932732ef071c6b7de88abef60c188678a648009bc82145"
+  },
+  "id": "GfeImHcxTe3eSuxW",
+  "tags": []
+}
