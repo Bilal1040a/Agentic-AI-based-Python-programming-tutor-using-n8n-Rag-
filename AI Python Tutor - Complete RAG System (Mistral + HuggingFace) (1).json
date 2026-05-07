@@ -1,5 +1,5 @@
 {
-  "name": "AI Python Tutor - Complete RAG System (Groq + HuggingFace)",
+  "name": "AI Python Tutor - Complete RAG System (Mistral + HuggingFace)",
   "nodes": [
     {
       "parameters": {
